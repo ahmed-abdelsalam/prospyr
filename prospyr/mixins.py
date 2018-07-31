@@ -117,7 +117,6 @@ class Updateable(object):
             data['custom_fields'].append(
                 {'custom_field_definition_id': cf['id'], 'value': value}
             )
-
         conn = self._get_conn(using)
         path = self.Meta.detail_path.format(id=self.id)
         resp = conn.put(conn.build_absolute_url(path), json=data)
@@ -194,12 +193,14 @@ class CustomFieldMixin(object):
         index = 0
         for field in cls.custom_fields:
             if field.name == field_name:
-                if field.data_type in [TYPE_STRING, TYPE_TEXT, TYPE_FLOAT, TYPE_URL, TYPE_PERCENTAGE,
-                                       TYPE_CURRENCY]:
+                if value is None:
+                    custom_fields[index].value = None
+                elif field.data_type in [TYPE_STRING, TYPE_TEXT, TYPE_FLOAT, TYPE_URL, TYPE_PERCENTAGE,
+                                         TYPE_CURRENCY]:
                     custom_fields[index].value = value
                 elif field.data_type == TYPE_DROPDOWN:
                     for option in field.options:
-                        if option['name'] == value:
+                        if option['name'].lower().strip() == value.lower().strip():
                             custom_fields[index].value = option['id']
                 elif field.data_type == TYPE_MULTISELECT:
                     values = []
