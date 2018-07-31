@@ -7,6 +7,7 @@ from datetime import datetime
 from requests import codes
 
 from prospyr.exceptions import ApiError
+from prospyr.constants import *
 
 logger = getLogger(__name__)
 
@@ -59,7 +60,6 @@ class Readable(object):
         resp = conn.get(conn.build_absolute_url(path))
         if resp.status_code not in self._read_success_codes:
             raise ApiError(resp.status_code, resp.text)
-
         data = self._load_raw(resp.json())
         self._set_fields(data)
         return True
@@ -96,7 +96,27 @@ class Updateable(object):
 
         # can't update IDs
         data = self._raw_data
+        data['custom_fields'] = []
         data.pop('id')
+
+        # convert to PW style
+        for cf in self._raw_data['custom_fields']:
+            if 'value' in cf:
+                if cf['data_type'] == TYPE_DROPDOWN:
+                    value = int(cf['value'])
+                elif cf['data_type'] == TYPE_MULTISELECT:
+                    value = [int(v) for v in eval(cf['value'])]
+                elif cf['data_type'] == TYPE_FLOAT:
+                    value = float(cf['value'])
+                elif cf['data_type'] == TYPE_DATE:
+                    value = int(cf['value'])
+                else:
+                    value = cf['value']
+            else:
+                value = ''
+            data['custom_fields'].append(
+                {'custom_field_definition_id': cf['id'], 'value': value}
+            )
 
         conn = self._get_conn(using)
         path = self.Meta.detail_path.format(id=self.id)
@@ -148,19 +168,47 @@ class CustomFieldMixin(object):
         for field in cls.custom_fields:
             if field.name == field_name:
                 if field.value:
-                    if field.data_type in ['String', 'Text', 'Float', 'URL', 'Percentage', 'Currency']:
+                    if field.data_type in [TYPE_STRING, TYPE_TEXT, TYPE_FLOAT, TYPE_URL, TYPE_PERCENTAGE,
+                                           TYPE_CURRENCY]:
                         value = field.value
-                    elif field.data_type == 'Dropdown':
+                    elif field.data_type == TYPE_DROPDOWN:
                         for option in field.options:
                             if option['id'] == field.value:
                                 value = option['name']
-                    elif field.data_type == 'MultiSelect':
+                    elif field.data_type == TYPE_MULTISELECT:
                         values = []
                         for val in field.value:
                             for option in field.options:
                                 if option['id'] == val:
                                     values.append(option['name'])
                         value = ','.join(values)
-                    elif field.data_type == 'Date':
+                    elif field.data_type == TYPE_DATE:
                         value = datetime.fromtimestamp(field.value).date()
         return value
+
+    def set_custom_field_value(cls, field_name, value):
+        """
+        Set custom field value.
+        """
+        custom_fields = cls.custom_fields
+        index = 0
+        for field in cls.custom_fields:
+            if field.name == field_name:
+                if field.data_type in [TYPE_STRING, TYPE_TEXT, TYPE_FLOAT, TYPE_URL, TYPE_PERCENTAGE,
+                                       TYPE_CURRENCY]:
+                    custom_fields[index].value = value
+                elif field.data_type == TYPE_DROPDOWN:
+                    for option in field.options:
+                        if option['name'] == value:
+                            custom_fields[index].value = option['id']
+                elif field.data_type == TYPE_MULTISELECT:
+                    values = []
+                    for val in value:
+                        for option in field.options:
+                            if option['name'] == val:
+                                values.append(option['id'])
+                    custom_fields[index].value = values
+                elif field.data_type == TYPE_DATE:
+                    custom_fields[index].value = value.timestamp()
+            index += 1
+        cls.custom_fields = custom_fields
