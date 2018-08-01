@@ -210,6 +210,6 @@ class CustomFieldMixin(object):
                                 values.append(option['id'])
                     custom_fields[index].value = values
                 elif field.data_type == TYPE_DATE:
-                    custom_fields[index].value = value.timestamp()
+                    custom_fields[index].value = value
             index += 1
         cls.custom_fields = custom_fields
