@@ -87,7 +87,7 @@ class Updateable(object):
 
     _update_success_codes = {codes.ok}
 
-    def update(self, using='default'):
+    def update(self, using='default', email=None):
         """
         Update this Resource. True on success.
         """
@@ -103,13 +103,13 @@ class Updateable(object):
         for cf in self._raw_data['custom_fields']:
             if 'value' in cf:
                 if cf['data_type'] == TYPE_DROPDOWN:
-                    value = int(cf['value'])
+                    value = int(cf['value']) if cf['value'] else None
                 elif cf['data_type'] == TYPE_MULTISELECT:
                     value = [int(v) for v in eval(cf['value'])]
                 elif cf['data_type'] == TYPE_FLOAT:
-                    value = float(cf['value'])
+                    value = float(cf['value']) if cf['value'] else None
                 elif cf['data_type'] == TYPE_DATE:
-                    value = int(cf['value'])
+                    value = int(cf['value']) if cf['value'] else None
                 else:
                     value = cf['value']
             else:
@@ -117,6 +117,8 @@ class Updateable(object):
             data['custom_fields'].append(
                 {'custom_field_definition_id': cf['id'], 'value': value}
             )
+        if email:
+            data['email']['email'] = email
         conn = self._get_conn(using)
         path = self.Meta.detail_path.format(id=self.id)
         resp = conn.put(conn.build_absolute_url(path), json=data)
