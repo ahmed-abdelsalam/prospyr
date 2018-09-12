@@ -3,7 +3,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 from functools import wraps
-
+import datetime
 import arrow
 from arrow.parser import ParserError
 from marshmallow import ValidationError, fields
@@ -13,6 +13,28 @@ from requests import codes
 from prospyr import exceptions
 from prospyr.util import encode_typename, import_dotted_path
 from prospyr.validate import WhitespaceEmail
+
+
+class FieldsCache:
+    def __init__(self):
+        """Constructor"""
+        self.cache = {}
+
+    def contains(self, key):
+        """ Returns True or False depending on whether or not the key is in the cache."""
+        return key in self.cache
+
+    def get(self, key):
+        """Return value for the key."""
+        return self.cache[key]['value']
+
+    def set(self, key, value):
+        """Set key value in cache."""
+        self.cache[key] = {'date_created': datetime.datetime.now(),
+                           'value': value}
+
+
+CACHE = FieldsCache()
 
 
 class Unix(fields.Field):
@@ -104,7 +126,11 @@ class NestedResource(fields.Field):
             if self.id_only:
                 resources.append(self.resource_cls.objects.get(id=value['id']))
             elif self.custom_field:
-                resource = self.resource_cls.objects.get(id=value['custom_field_definition_id'])
+                if CACHE.contains(value['custom_field_definition_id']):
+                    resource = CACHE.get(value['custom_field_definition_id'])
+                else:
+                    resource = self.resource_cls.objects.get(id=value['custom_field_definition_id'])
+                    CACHE.set(value['custom_field_definition_id'], resource)
                 resource.value = value['value']
                 resources.append(resource)
             else:
