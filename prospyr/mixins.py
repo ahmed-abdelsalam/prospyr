@@ -91,7 +91,7 @@ class Updateable(object):
 
     _update_success_codes = {codes.ok}
 
-    def update(self, using='default', email=None):
+    def update(self, using='default', email=None, emails=None):
         """
         Update this Resource. True on success.
         """
@@ -127,6 +127,13 @@ class Updateable(object):
             except KeyError:
                 # this may happen if the lead doesn't have an email, by default we add as work email
                 data['email'] = {'email': email, 'category': 'work'}
+        if emails:
+            try:
+                data['emails'][0].email = emails
+            except KeyError:
+                # this may happen if the lead doesn't have an email, by default we add as work email
+                data['emails'] = [{'email': emails, 'category': 'work'}]
+                
         conn = self._get_conn(using)
         path = self.Meta.detail_path.format(id=self.id)
         resp = conn.put(conn.build_absolute_url(path), json=data)
