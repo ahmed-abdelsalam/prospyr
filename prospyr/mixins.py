@@ -129,7 +129,7 @@ class Updateable(object):
                 data['email'] = {'email': email, 'category': 'work'}
         if emails:
             try:
-                data['emails'][0].email = emails
+                data['emails'][0]['email'] = emails
             except KeyError:
                 # this may happen if the lead doesn't have an email, by default we add as work email
                 data['emails'] = [{'email': emails, 'category': 'work'}]
