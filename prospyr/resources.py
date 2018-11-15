@@ -533,7 +533,7 @@ class Opportunity(CustomFieldMixin, Resource, mixins.ReadWritable):
         allow_none=True,
         validate=OneOf(choices=('None', 'Low', 'Medium', 'High')),
     )
-    stage = fields.String(
+    status = fields.String(
         allow_none=True,
         validate=OneOf(choices=('Open', 'Won', 'Lost', 'Abandoned')),
     )
