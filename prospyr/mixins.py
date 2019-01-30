@@ -20,7 +20,7 @@ class Creatable(object):
     # pworks uses 200 OK for creates. 201 CREATED is here through optimism.
     _create_success_codes = {codes.created, codes.ok}
 
-    def create(self, using='default', email=None):
+    def create(self, using='default', email=None, emails=None):
         """
         Create a new instance of this Resource. True on success.
         """
@@ -34,6 +34,9 @@ class Creatable(object):
         data = self._raw_data
         if email:
             data['email'] = {'category': 'work', 'email': email}
+
+        if emails:
+            data['emails'] = [{'email': emails, 'category': 'work'}]
         resp = conn.post(conn.build_absolute_url(path), json=data)
 
         if resp.status_code in self._create_success_codes:
