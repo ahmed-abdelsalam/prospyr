@@ -137,18 +137,24 @@ class Updateable(object):
                 # this may happen if the lead doesn't have an email, by default we add as work email
                 data['emails'] = [{'email': emails, 'category': 'work'}]
         try:
-            for number in data['phone_numbers']:
-                if number['category'] is None :
-                    number['category'] = 'work' # set default category value to work 
+            if 'phone_numbers' in data:
+                for number in data['phone_numbers']:
+                    if number['category'] is None :
+                        number['category'] = 'work' # set default category value to work 
         except KeyError:
             data['phone_numbers'] = [{'number': '', 'category': 'work'}]
         try:
-            for website in data['websites']:
-                if website['category'] is None :
-                    website['category'] = 'work' # set default category value to work
+            if 'websites' in data:
+                for website in data['websites']:
+                    if website['category'] is None :
+                        website['category'] = 'work' # set default category value to work
         except KeyError:
             data['websites'] = [{'url': '', 'category': 'work'}]
-             
+        if type(self).__name__ == 'Opportunity':
+            try:
+                del data['close_date']
+            except KeyError:
+                pass
         conn = self._get_conn(using)
         path = self.Meta.detail_path.format(id=self.id)
         resp = conn.put(conn.build_absolute_url(path), json=data)
